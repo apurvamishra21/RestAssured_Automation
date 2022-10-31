@@ -1,0 +1,22 @@
+package com.ecomm;
+
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
+
+
+
+public class ECommApiTest {
+	
+	public static void main(String[] args) {
+		
+		RequestSpecification req = new RequestSpecBuilder().setBaseUri("https://rahulshettyacademy.com").setContentType(ContentType.JSON).build();
+		
+		
+		LoginRequest loginRequest = new LoginRequest();
+		loginRequest.setUserEmail("rahulshetty@gmail.com");
+		loginRequest.setUserPassword("IamKing@000");
+		given().spec(req).body()
+	}
+
+}

@@ -1,0 +1,3 @@
+ApiAutomation.outdir=/test-output
+ApiAutomation.useProjectJar=false
+eclipse.preferences.version=1

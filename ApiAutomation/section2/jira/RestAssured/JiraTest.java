@@ -1,0 +1,123 @@
+package jira.RestAssured;
+
+import io.restassured.RestAssured;
+import io.restassured.filter.session.SessionFilter;
+import io.restassured.path.json.JsonPath;
+
+import static io.restassured.RestAssured.*;
+
+import java.io.File;
+
+import org.testng.Assert;
+
+public class JiraTest {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		RestAssured.baseURI = "http://localhost:8080/";
+		
+		//Login scenario
+		//In post request we must have body
+		
+		SessionFilter session = new SessionFilter();
+		
+		//A session filter can be used record the session id returned from the server as well as automatically apply this session id in subsequent requests.
+		//relaxedHTTPSValidation() for proper https websites here we dont need as we are running it on our local
+		String response = given().relaxedHTTPSValidation().header("Content-Type" , "application/json").body("{ \"username\": \"rahulonlinetutor\", \r\n" + 
+				"\"password\": \"Jira12345\" \r\n" + 
+				"}").log().all().when().filter(session).post("/rest/auth/1/session").then().log().all().extract().response().asString();
+		String expectedMessage = "Hi How are you?";
+		//here it will take the same session as the previous one . it will consider as a logged user
+		//here we can give id or key as pathParam
+		
+		//Add comment
+		String addCommentResponse = given().pathParam("key", "10101").log().all().header("Content-Type" , "application/json").body("{\r\n" + 
+				"    \"body\": \""+expectedMessage+"\",\r\n" + 
+				"    \"visibility\": {\r\n" + 
+				"        \"type\": \"role\",\r\n" + 
+				"        \"value\": \"Administrators\"\r\n" + 
+				"    }\r\n" + 
+				"}").filter(session).when().post("/rest/api/2/issue/{key}/comment").then().log().all()
+				.assertThat().statusCode(201).extract().response().asString();
+		JsonPath js = new JsonPath(addCommentResponse);
+		String commentId = js.getString("id");
+		
+		//Add Attachment
+		//Specify a file to upload to the server using multi-part form data uploading. - official documentation
+		//An HTTP multipart request is an HTTP request that HTTP clients construct to send files and data over to an HTTP Server. It is commonly used by browsers and HTTP clients to upload files to the server.
+		given().header("X-Atlassian-Token" , "no-check").filter(session).pathParam("key", "10101")
+		.header("Content-Type" , "multipart/form-data")
+		.multiPart("file" , new File("jira.txt")).when().post("rest/api/2/issue/{key}/attachments").then().log().all().assertThat().statusCode(200);
+		
+	//	if the request is success then we get STATUS 200
+		
+		/*
+		 * Difference b/w path param and query param
+		 * 
+		 * PathParam leads upto the entity type that you are requesting.
+		 * QueryParameters comes with question mark
+		 * The path parameter defines the resource location, while the query parameter defines sort, pagination, or filter operations. The user's input (the query) is passed as a variable in the query parameter, while each path parameter must be substituted with an actual value when the client makes an API call.
+		 */
+		//Get issue 
+		
+		//It is not a post value so we will not have header value as well
+		
+		String issueDetails1 = given().filter(session).pathParam("key", "10101")
+		.log().all().when().get("/rest/api/2/issue/{key}").then()
+		.log().all().extract().response().asString();
+		
+		System.out.println(issueDetails1);
+		
+		//this will give the entire response if we copy and place the entire response in json editor we are getting 41 response
+		
+		//if we want to restrict the response then we have to use query parameter
+		
+		
+		String issueDetails2 = given().filter(session).pathParam("key", "10101")
+				.queryParam("fields", "comment")
+				.log().all().when().get("/rest/api/2/issue/{key}").then()
+				.log().all().extract().response().asString();
+				
+				System.out.println(issueDetails2);
+				
+				
+			//Get Issue
+				String issueDetails3 = given().filter(session).pathParam("key", "10101").log().all().when().get("/rest/api/2/issue/{issueIdOrKey}").then().log().all().extract().response().asString();
+				
+				System.out.println(issueDetails3);//here we have 41 fields
+				
+			//	How to use both path parameter and query parameter in one single test
+				
+	//out of the 'n' no of projects we have path parameter is reutilizing the sub resource whereas query parameter will help you to sort or drill down the existing resource.
+		
+String issueDetails4 = given().filter(session).pathParam("key", "10101")
+						.queryParam("fields", "comment")
+						.log().all().when().get("/rest/api/2/issue/{issueIdOrKey}").then()
+						.log().all().extract().response().asString();
+				
+				System.out.println(issueDetails4);//here we have just 1 field
+				
+				JsonPath js1 = new JsonPath(issueDetails4);
+				//as it is returning count which is numeric , we are using getInt()
+				int commentsCount = js1.get("fields.comment.comments.size()");//total no of comments
+				
+				for(int i = 0 ; i < commentsCount ; i++)
+				{
+					//System.out.println(js1.getInt("fields.comment.comments["+i+"]id"));
+					String commentIdIssue = js1.get("fields.comment.comments["+i+"]id").toString();
+					if(commentIdIssue.equalsIgnoreCase(commentId))
+					{
+					String message = js1.get("fields.comment.comments["+i+"]id").toString();
+					System.out.println(message);
+					Assert.assertEquals(message, expectedMessage);
+					}
+					
+				}
+	
+	
+	
+	
+	}
+
+}

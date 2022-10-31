@@ -1,0 +1,13 @@
+package com.ecomm;
+
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.ContentType;
+
+public class ECommApiTest {
+	
+	public static void main(String[] args) {
+		
+		new RequestSpecBuilder().setBaseUri("https://rahulshettyacademy.com").setContentType(ContentType.JSON);
+	}
+
+}

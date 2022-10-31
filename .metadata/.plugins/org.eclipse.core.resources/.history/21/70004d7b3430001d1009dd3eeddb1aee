@@ -1,0 +1,44 @@
+package jira.RestAssured;
+
+import io.restassured.RestAssured;
+import io.restassured.filter.session.SessionFilter;
+
+import static io.restassured.RestAssured.*;
+
+public class JiraTest {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		RestAssured.baseURI = "http://localhost:8080/";
+		
+		//Login scenario
+		//In post request we must have body
+		
+		SessionFilter session = new SessionFilter();
+		
+		//A session filter can be used record the session id returned from the server as well as automatically apply this session id in subsequent requests.
+		
+		String response = given().header("Content-Type" , "application/json").body("{ \"username\": \"rahulonlinetutor\", \r\n" + 
+				"\"password\": \"Jira12345\" \r\n" + 
+				"}").log().all().when().filter(session).post("/rest/auth/1/session").then().log().all().extract().response().asString();
+		
+		//here it will take the same session as the previous one . it will consider as a logged user
+		//here we can give id or key as pathParam
+		
+		//Add comment
+		given().pathParam("key", "10101").log().all().header("Content-Type" , "application/json").body("{\r\n" + 
+				"    \"body\": \"This is my first comment\",\r\n" + 
+				"    \"visibility\": {\r\n" + 
+				"        \"type\": \"role\",\r\n" + 
+				"        \"value\": \"Administrators\"\r\n" + 
+				"    }\r\n" + 
+				"}").filter(session).when().post("/rest/api/2/issue/{key}/comment").then().log().all().assertThat().statusCode(201);
+		
+		//Add Attachment
+		
+		given().header("X-Atlassian-Token" , "no-check").filter(session).pathParam("key", "10101").when().post("rest/api/2/issue/{key}/attachments")
+
+	}
+
+}
